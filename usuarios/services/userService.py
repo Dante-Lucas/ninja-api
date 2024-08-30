@@ -2,8 +2,8 @@ from ..models import User
 
 class UserService:
     
-    def __init__(self,user_model:User):
-        self.user_model = user_model
+    def __init__(self,):
+        self.user_model = User
         
     def get_all(self):
         return self.user_model.objects.all()

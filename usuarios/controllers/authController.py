@@ -1,16 +1,25 @@
-from ninja_extra import http_post
-from ..services import AuthService
 from ninja_extra import permissions
+from django.http import HttpRequest
 from django.db.utils import IntegrityError
 from ninja_jwt.exceptions import TokenError
-from ..schema import LoginSchema,TokenSchema
+from ninja_extra import http_post,http_delete
+from ..services import AuthService,UserService
+from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.tokens import default_token_generator
+from ..schema import LoginSchema,TokenSchema,PasswordResetSchema
+from usuarios.schema import PasswordResetSchema,SetPasswordSchema
 from ninja_extra.controllers import api_controller, ControllerBase
-@api_controller('/auth')
+
+
+@api_controller('/auth',permissions=[permissions.AllowAny])
 class AuthController(ControllerBase):
 
-    def __init__(self, auth:AuthService) -> None:
+    def __init__(self, auth:AuthService, user:UserService, user_entity:get_user_model) -> None:
         self.auth = auth
+        self.user = user
+        self.user_entity = user_entity
 
     @http_post('', response={200:dict,400:dict, 500:dict})    
     def login_user(self,request, user:LoginSchema):
@@ -24,8 +33,32 @@ class AuthController(ControllerBase):
             return 400,{'error':'Erro de validação dos dados'}
         except IntegrityError:
             return 500,{'error':'Erro interno no sistema'}
-        
-    @http_post('/logout', response={204:dict,401:dict,500:dict},permissions=[permissions.IsAuthenticated])
+    
+    @http_post('/reset', response={204:dict,400:dict,500:dict})
+    def password_reset(self,request,data:PasswordResetSchema):
+        form = PasswordResetForm(data.dict())
+        try:
+            if form.is_valid():
+                form.save(request=request)
+                return 204,{'message':'Um email foi enviado para vc'}
+        except Exception as e:
+            return 500,{'error':str(e)}
+        return 400,{'error':form.errors}
+
+    @http_post('/reset/confirm',response={204: dict, 400: dict, 500: dict})
+    def password_reset_confirm(self,request:HttpRequest,data:SetPasswordSchema):
+        user_field = self.user_entity.USERNAME_FIELD
+        user_data = {user_field: getattr(data,user_field)}
+        user = self.user.filter(**user_data)
+
+        if user.exists():
+            user = user.get()
+            if default_token_generator.check_token(user,data.token):
+                user.set_password(data.new_password1)
+                user.save()
+                return 204,{'message':'Sua senha foi alterada com sucesso'}
+        return 400,{'error':'Link inválido'}
+    @http_delete('', response={204:dict,401:dict,500:dict},permissions=[permissions.IsAuthenticated])
     def logout_user(self,request, data:TokenSchema):
         try:
             response = self.auth.blacklist(data.refresh)

@@ -1,4 +1,5 @@
 from typing import List
+from django.db import transaction
 from ..services import UserService
 from django.db.utils import IntegrityError
 from ninja_extra import http_get,http_post
@@ -17,6 +18,7 @@ class UserController(ControllerBase):
         user = self.user.get_all()
         return user
 
+    @transaction.atomic
     @http_post('',response={201:dict,400:dict, 500:dict})
     def create_user(self,request,user:UserSchema):
         
