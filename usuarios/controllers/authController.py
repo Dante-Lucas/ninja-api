@@ -16,25 +16,27 @@ from ninja_extra.controllers import api_controller, ControllerBase
 @api_controller('/auth',permissions=[permissions.AllowAny])
 class AuthController(ControllerBase):
 
-    def __init__(self, auth:AuthService, user:UserService, user_entity:get_user_model) -> None:
+    def __init__(self, auth:AuthService, user_service:UserService) -> None:
         self.auth = auth
-        self.user = user
-        self.user_entity = user_entity
+        self.user = user_service
 
-    @http_post('', response={200:dict,400:dict, 500:dict})    
+    @http_post('', response={200:dict,400:dict,404:dict, 500:dict},auth=None)    
     def login_user(self,request, user:LoginSchema):
-        try:
-            users = self.auth.authentication(**user.dict())
-            if users is not None:
-                refresh = self.auth.generate_token(users)
-                return 200,refresh
-            return 400,{'error':'Usuário ou senha inválido'}
-        except ValidationError:
-            return 400,{'error':'Erro de validação dos dados'}
-        except IntegrityError:
-            return 500,{'error':'Erro interno no sistema'}
-    
-    @http_post('/reset', response={204:dict,400:dict,500:dict})
+        
+        user_exist = self.user.filter(username=user.username)
+        if user_exist.exists():
+            try: 
+                users = self.auth.authentication(**user.dict())
+                if users is not None:
+                    refresh = self.auth.generate_token(users)
+                    return 200,refresh
+                return 400,{'error':'Usuário ou senha inválido'}
+            except ValidationError:
+                return 400,{'error':'Erro de validação dos dados'}
+            except IntegrityError:
+                return 500,{'error':'Erro interno no sistema'}
+        return 404,{'error':'Usuário não encontrado'} 
+    @http_post('/reset', response={204:dict,400:dict,500:dict},auth=None)
     def password_reset(self,request,data:PasswordResetSchema):
         form = PasswordResetForm(data.dict())
         try:
@@ -45,7 +47,7 @@ class AuthController(ControllerBase):
             return 500,{'error':str(e)}
         return 400,{'error':form.errors}
 
-    @http_post('/reset/confirm',response={204: dict, 400: dict, 500: dict})
+    @http_post('/reset/confirm',response={204: dict, 400: dict, 500: dict},auth=None)
     def password_reset_confirm(self,request:HttpRequest,data:SetPasswordSchema):
         user_field = self.user_entity.USERNAME_FIELD
         user_data = {user_field: getattr(data,user_field)}

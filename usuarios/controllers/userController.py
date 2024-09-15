@@ -13,7 +13,7 @@ class UserController(ControllerBase):
     def __init__(self, user_service: UserService) -> None:
         self.user = user_service
 
-    @http_get("", response=List[UserResponseSchema])
+    @http_get("", response=List[UserResponseSchema],permissions=[permissions.IsAuthenticated])
     def get_users(self,request): 
         user = self.user.get_all()
         return user
@@ -32,4 +32,6 @@ class UserController(ControllerBase):
             return 400,{'error':'Erro de validação de dados'}
         except IntegrityError:
             return 500,{'error':'Erro interno no sistema'}
+
+
 
