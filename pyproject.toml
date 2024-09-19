@@ -23,6 +23,7 @@ taskipy = "^1.13.0"
 serve = "python manage.py runserver"
 make = "python manage.py makemigrations"
 migrate = "python manage.py migrate"
+super = "python manage.py createsuperuser"
 uvicorn = "uvicorn backend.asgi:application --reload"
 
 [build-system]
