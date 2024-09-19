@@ -52,7 +52,8 @@ NINJA_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
     'TOKEN_BLACKLIST_INPUT_SCHEMA': "ninja_jwt.schema.TokenBlacklistInputSchema",
-    'AUTH_HEADER_PREFIX': 'Bearer'
+    'AUTH_HEADER_PREFIX': 'Bearer',
+    'JTI_CLAIM': 'jti',
 }
 
 MIDDLEWARE = [

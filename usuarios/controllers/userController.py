@@ -1,12 +1,14 @@
 from typing import List
 from django.db import transaction
 from ..services import UserService
+from ninja_extra import permissions
+from django.http import HttpRequest
 from django.db.utils import IntegrityError
 from ninja_extra import http_get,http_post
 from ..schema import UserSchema,UserResponseSchema
 from django.core.exceptions import ValidationError
 from ninja_extra.controllers import api_controller,ControllerBase
-from ninja_extra import permissions
+
 @api_controller('/user',permissions=[permissions.AllowAny])
 class UserController(ControllerBase):
 
@@ -20,7 +22,7 @@ class UserController(ControllerBase):
 
     @transaction.atomic
     @http_post('',response={201:dict,400:dict, 500:dict})
-    def create_user(self,request,user:UserSchema):
+    def create_user(self,request:HttpRequest,user:UserSchema):
         
         users = self.user.filter(username=user.username,email=user.email)
         if users.exists():

@@ -1,4 +1,4 @@
-from ninja_jwt.tokens import RefreshToken
+from ninja_jwt.tokens import RefreshToken,AccessToken
 from django.contrib.auth import authenticate
 
 class AuthService:
@@ -6,13 +6,13 @@ class AuthService:
     def authentication(self,**credentials):
         return authenticate(**credentials)
 
-    def generate_token(self,user:any) -> dict:
+    def generate_token(self,user):
         try:
-            refresh = RefreshToken.for_user(user)
-            return {'refresh': str(refresh), 'access': str(refresh.access_token)}
+            token = AccessToken.for_user(user)
+            return {'access': str(token)}
         except Exception as e:
             return {'error':str(e)}
-    def blacklist(self,token) -> str:
+    def blacklist(self,token):
         try:
             refresh = RefreshToken(token)
             refresh.blacklist()

@@ -1,4 +1,6 @@
 from ..models import User
+from asgiref.sync import sync_to_async
+
 
 class UserService:
     
@@ -7,7 +9,7 @@ class UserService:
         
     def get_all(self):
         return self.user_model.objects.all()
-    
+
     def create(self,**user):
         return self.user_model.objects.create_user(**user)
 

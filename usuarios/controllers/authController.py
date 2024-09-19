@@ -8,11 +8,11 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.contrib.auth.forms import PasswordResetForm
 from django.contrib.auth.tokens import default_token_generator
-from ..schema import LoginSchema,TokenSchema,PasswordResetSchema
-from usuarios.schema import PasswordResetSchema,SetPasswordSchema
 from ninja_extra.controllers import api_controller, ControllerBase
+from ..schema import LoginSchema,TokenSchema,PasswordResetSchema,SetPasswordSchema
 
-
+from typing import TypedDict,Literal,Tuple,Union
+User = get_user_model()
 @api_controller('/auth',permissions=[permissions.AllowAny])
 class AuthController(ControllerBase):
 
@@ -21,15 +21,16 @@ class AuthController(ControllerBase):
         self.user = user_service
 
     @http_post('', response={200:dict,400:dict,404:dict, 500:dict},auth=None)    
-    def login_user(self,request, user:LoginSchema):
+    def login_user(self, request:HttpRequest, user:LoginSchema):
         
         user_exist = self.user.filter(username=user.username)
-        if user_exist.exists():
+        
+        if user_exist.aexists():
             try: 
                 users = self.auth.authentication(**user.dict())
                 if users is not None:
-                    refresh = self.auth.generate_token(users)
-                    return 200,refresh
+                    token = self.auth.generate_token(users)
+                    return 200,token
                 return 400,{'error':'Usuário ou senha inválido'}
             except ValidationError:
                 return 400,{'error':'Erro de validação dos dados'}
@@ -37,7 +38,7 @@ class AuthController(ControllerBase):
                 return 500,{'error':'Erro interno no sistema'}
         return 404,{'error':'Usuário não encontrado'} 
     @http_post('/reset', response={204:dict,400:dict,500:dict},auth=None)
-    def password_reset(self,request,data:PasswordResetSchema):
+    def password_reset(self, request:HttpRequest, data:PasswordResetSchema):
         form = PasswordResetForm(data.dict())
         try:
             if form.is_valid():
@@ -48,8 +49,8 @@ class AuthController(ControllerBase):
         return 400,{'error':form.errors}
 
     @http_post('/reset/confirm',response={204: dict, 400: dict, 500: dict},auth=None)
-    def password_reset_confirm(self,request:HttpRequest,data:SetPasswordSchema):
-        user_field = self.user_entity.USERNAME_FIELD
+    def password_reset_confirm(self, request:HttpRequest, data:SetPasswordSchema):
+        user_field = User.USERNAME_FIELD
         user_data = {user_field: getattr(data,user_field)}
         user = self.user.filter(**user_data)
 
@@ -61,7 +62,7 @@ class AuthController(ControllerBase):
                 return 204,{'message':'Sua senha foi alterada com sucesso'}
         return 400,{'error':'Link inválido'}
     @http_delete('', response={204:dict,401:dict,500:dict},permissions=[permissions.IsAuthenticated])
-    def logout_user(self,request, data:TokenSchema):
+    def logout_user(self,request:HttpRequest, data:TokenSchema):
         try:
             response = self.auth.blacklist(data.refresh)
             return 204,response
