@@ -1,9 +1,0 @@
-SECRET_KEY = 'django-insecure-wag=ih4u6iz3n=4kt68q(%j)6(ijlygl@g+4a^t$r@$bs&u#-3' #use a chave da sua aplicação
-EMAIL_BACKEND = '' #backend de email
-EMAIL_HOST = '' #provedor de email
-EMAIL_PORT =  #porta que o smt do provedor de email usa
-EMAIL_USE_TLS = True #usar TLS
-EMAIL_HOST_USER = '' #email
-EMAIL_HOST_PASSWORD = "" #senha do email 
-
-#mude isso para um arquivo .env
